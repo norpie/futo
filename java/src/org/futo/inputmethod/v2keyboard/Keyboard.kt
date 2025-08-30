@@ -317,13 +317,18 @@ data class Keyboard(
                 it.isLetterRow && it.letters != null && (
                         it.letters.contains(TemplateShiftKey)
                                 || it.letters.contains(TemplateDeleteKey))
-            }) {
+            } && name != "QWERTY") {
                 val ultimateRow = removeAt(size - 1)
                 assert(ultimateRow.isLetterRow)
 
                 val updatedRow = ultimateRow.copy(
                     letters = ultimateRow.letters!!.toMutableList().apply {
-                        add(0, TemplateShiftKey)
+                        // For ortholinear QWERTY, place shift after 'l' key (position 9)
+                        if (name == "QWERTY" && size >= 9) {
+                            add(9, TemplateShiftKey)
+                        } else {
+                            add(0, TemplateShiftKey)
+                        }
                         add(TemplateDeleteKey)
                     }
                 )

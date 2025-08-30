@@ -191,7 +191,10 @@ data class LayoutEngine(
 
     private fun computeRegularKeyWidth(layoutWidth: Int = this.layoutWidth): Float {
         return keyboard.overrideWidths[KeyWidth.Regular]?.let { it * layoutWidth.toFloat() } ?: run {
-            (layoutWidth.toFloat() / effectiveRows.filter { it.isLetterRow }.maxOf { it.keys.size }.toFloat()) - EPS
+            // For ortholinear QWERTY layout, use fixed 10-column grid
+            val isOrtholinearQwerty = keyboard.name == "QWERTY"
+            val maxKeys = if (isOrtholinearQwerty) 10f else effectiveRows.filter { it.isLetterRow }.maxOf { it.keys.size }.toFloat()
+            (layoutWidth.toFloat() / maxKeys) - EPS
         }
     }
 

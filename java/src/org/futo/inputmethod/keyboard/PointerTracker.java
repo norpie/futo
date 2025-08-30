@@ -121,6 +121,9 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
     private static boolean sInGesture = false;
     private static TypingTimeRecorder sTypingTimeRecorder;
 
+    // Track swipe-based shift state for ortholinear QWERTY
+    private static boolean sSwipeShiftActive = false;
+
     // The position and time at which first down event occurred.
     private long mDownTime;
     @Nonnull
@@ -308,6 +311,12 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
         // Even if the key is disabled, it should respond if it is in the altCodeWhileTyping state.
         if (key.isEnabled() || altersCode) {
             sTypingTimeRecorder.onCodeInput(code, eventTime);
+
+            // Reset swipe shift state when a letter is typed
+            if (Constants.isLetterCode(code)) {
+                sSwipeShiftActive = false;
+            }
+
             if (code == Constants.CODE_OUTPUT_TEXT) {
                 sListener.onTextInput(key.getOutputText());
             } else if (code != Constants.CODE_UNSPECIFIED) {
@@ -1042,6 +1051,64 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
         cancelTrackingForAction();
     }
 
+    private boolean detectAndHandleCustomSwipeGesture(final int x, final int y, final long eventTime) {
+        // Only handle custom swipes on the ortholinear QWERTY layout
+        if (mKeyboard == null || !"qwerty".equals(mKeyboard.mId.mKeyboardLayoutSetName)) {
+            return false;
+        }
+
+        // Calculate swipe distance and direction
+        final int deltaX = x - mStartX;
+        final int deltaY = y - mStartY;
+        final int absDeltaX = Math.abs(deltaX);
+        final int absDeltaY = Math.abs(deltaY);
+
+        // Minimum swipe distance threshold (adjust as needed)
+        final int minSwipeDistance = 100;
+
+        // Determine swipe direction
+        if (absDeltaX > minSwipeDistance || absDeltaY > minSwipeDistance) {
+            if (absDeltaX > absDeltaY) {
+                // Horizontal swipe
+                if (deltaX < -minSwipeDistance) {
+                    // Swipe left - Delete (word if shifted, character if not)
+                    handleSwipeDelete(x, y);
+                    return true;
+                }
+            } else {
+                // Vertical swipe
+                if (deltaY < -minSwipeDistance) {
+                    // Swipe up - Activate shift for next character
+                    handleSwipeShift(x, y);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private void handleSwipeShift(final int x, final int y) {
+        // Activate swipe-based shift state
+        sSwipeShiftActive = true;
+
+        // Also simulate proper shift key press/release to activate visual shift state
+        sListener.onPressKey(Constants.CODE_SHIFT, 0, true);
+        sListener.onReleaseKey(Constants.CODE_SHIFT, false);
+    }
+
+    private void handleSwipeDelete(final int x, final int y) {
+        if (sSwipeShiftActive) {
+            // Try to trigger word deletion using the same logic as long-press delete
+            // This should work if user's backspace mode is set to words
+            sListener.onCodeInput(Constants.CODE_DELETE, x, y, true); // true = key repeat
+            // Keep shift active after word deletion
+        } else {
+            // Delete single character when not shifted
+            sListener.onCodeInput(Constants.CODE_DELETE, x, y, false);
+        }
+    }
+
     private void onUpEventInternal(final int x, final int y, final long eventTime) {
         mStartedOnFastLongPress = false;
         sTimerProxy.cancelKeyTimersOf(this);
@@ -1069,6 +1136,13 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
                 mMoreKeysPanel.onUpEvent(translatedX, translatedY, mPointerId, eventTime);
             }
             dismissMoreKeysPanel();
+            return;
+        }
+
+        // Check for custom swipe gestures before processing regular gestures
+        if (detectAndHandleCustomSwipeGesture(x, y, eventTime)) {
+            // Custom swipe gesture was detected and handled, skip regular processing
+            sInGesture = false;
             return;
         }
 
