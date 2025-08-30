@@ -15,6 +15,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     environment: release
+    permissions:
+      contents: write
+      packages: write
 
     steps:
     - name: Checkout code
@@ -129,13 +132,10 @@ jobs:
         ls -la
 
     - name: Create GitHub release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ github.event.inputs.version || github.ref_name }}
-        release_name: Release ${{ github.event.inputs.version || github.ref_name }}
+        name: Release ${{ github.event.inputs.version || github.ref_name }}
         body: |
           ## FUTO Keyboard Release ${{ github.event.inputs.version || github.ref_name }}
 
@@ -152,25 +152,10 @@ jobs:
           ```
           $(cat release-artifacts/futo-unstable-release.apk.sha256)
           ```
+        files: |
+          release-artifacts/futo-unstable-release.apk
+          release-artifacts/futo-unstable-release.apk.sha256
         draft: false
         prerelease: false
-
-    - name: Upload APK to release
-      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: release-artifacts/futo-unstable-release.apk
-        asset_name: futo-unstable-release-${{ steps.version.outputs.version_name }}.apk
-        asset_content_type: application/vnd.android.package-archive
-
-    - name: Upload SHA256 checksum
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: release-artifacts/futo-unstable-release.apk.sha256
-        asset_name: futo-unstable-release-${{ steps.version.outputs.version_name }}.apk.sha256
-        asset_content_type: text/plain
