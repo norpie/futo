@@ -18,3 +18,5 @@ java/res/raw/mozc.data
 # Development documentation
 CLAUDE.md
 AGENTS.md
+keystore_base64.txt
+release.keystore
