@@ -86,7 +86,7 @@ jobs:
     - name: Verify APK creation
       run: |
         echo "=== Checking APK Output ==="
-        APK_PATH="build/outputs/apk/unstable/release/latinime-unstable-release.apk"
+        APK_PATH="build/outputs/apk/unstable/release/futo-unstable-release.apk"
 
         if [ ! -f "$APK_PATH" ]; then
           echo "❌ APK not found at: $APK_PATH"
@@ -170,14 +170,14 @@ jobs:
         echo "=== Creating Release Archives ==="
         mkdir -p release-artifacts
 
-        if [ ! -f "build/outputs/apk/unstable/release/latinime-unstable-release.apk" ]; then
+        if [ ! -f "build/outputs/apk/unstable/release/futo-unstable-release.apk" ]; then
           echo "❌ APK missing during archive creation"
           exit 1
         fi
 
-        cp build/outputs/apk/unstable/release/latinime-unstable-release.apk release-artifacts/
+        cp build/outputs/apk/unstable/release/futo-unstable-release.apk release-artifacts/
         cd release-artifacts
-        sha256sum latinime-unstable-release.apk > latinime-unstable-release.apk.sha256
+        sha256sum futo-unstable-release.apk > futo-unstable-release.apk.sha256
         echo "✅ Release archives created"
         ls -la
 
@@ -203,7 +203,7 @@ jobs:
 
           ### SHA256 Checksum
           ```
-          $(cat release-artifacts/latinime-unstable-release.apk.sha256)
+          $(cat release-artifacts/futo-unstable-release.apk.sha256)
           ```
         draft: false
         prerelease: false
@@ -214,8 +214,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: release-artifacts/latinime-unstable-release.apk
-        asset_name: latinime-unstable-release-${{ steps.version.outputs.version_name }}.apk
+        asset_path: release-artifacts/futo-unstable-release.apk
+        asset_name: futo-unstable-release-${{ steps.version.outputs.version_name }}.apk
         asset_content_type: application/vnd.android.package-archive
 
     - name: Upload SHA256 checksum
@@ -224,6 +224,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: release-artifacts/latinime-unstable-release.apk.sha256
-        asset_name: latinime-unstable-release-${{ steps.version.outputs.version_name }}.apk.sha256
+        asset_path: release-artifacts/futo-unstable-release.apk.sha256
+        asset_name: futo-unstable-release-${{ steps.version.outputs.version_name }}.apk.sha256
         asset_content_type: text/plain
