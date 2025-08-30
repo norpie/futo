@@ -356,3 +356,10 @@ dependencies {
 
 project.logger.lifecycle("versionCode = ${android.defaultConfig.versionCode}")
 project.logger.lifecycle("versionName = ${android.defaultConfig.versionName}")
+
+// Task to print version name for GitHub Actions
+task printVersionName {
+    doLast {
+        println android.defaultConfig.versionName
+    }
+}
