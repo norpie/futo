@@ -86,12 +86,15 @@ jobs:
     - name: Verify APK creation
       run: |
         echo "=== Checking APK Output ==="
+        echo "Listing all APK files in build directory:"
+        find build/outputs -name "*.apk" -exec ls -la {} \; 2>/dev/null || echo "No APK files found in build/outputs"
+
         APK_PATH="build/outputs/apk/unstable/release/futo-unstable-release.apk"
 
         if [ ! -f "$APK_PATH" ]; then
           echo "❌ APK not found at: $APK_PATH"
-          echo "=== Build Directory Contents ==="
-          find build/outputs -name "*.apk" 2>/dev/null || echo "No APK files found"
+          echo "Contents of release directory:"
+          ls -la build/outputs/apk/unstable/release/ 2>/dev/null || echo "Release directory not found"
           exit 1
         fi
 
