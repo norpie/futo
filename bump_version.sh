@@ -13,13 +13,14 @@ NC='\033[0m' # No Color
 
 # Function to print usage
 usage() {
-    echo "Usage: $0 --minor|--patch"
+    echo "Usage: $0 --minor|--patch [--yes]"
     echo "  --minor    Increment minor version and reset patch to 0"
     echo "  --patch    Increment patch version"
+    echo "  --yes      Skip confirmation prompt (for CI)"
     echo ""
     echo "Examples:"
-    echo "  $0 --minor    # v1.2.3 -> v1.3.0"
-    echo "  $0 --patch    # v1.2.3 -> v1.2.4"
+    echo "  $0 --minor          # v1.2.3 -> v1.3.0 (with confirmation)"
+    echo "  $0 --patch --yes    # v1.2.3 -> v1.2.4 (no confirmation)"
     exit 1
 }
 
