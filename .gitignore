@@ -11,3 +11,7 @@ key.jks
 java/res/raw/mozc.data
 .cxx
 .direnv
+
+# Development documentation
+CLAUDE.md
+AGENTS.md
