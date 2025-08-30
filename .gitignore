@@ -12,6 +12,9 @@ java/res/raw/mozc.data
 .cxx
 .direnv
 
+# Environment variables
+.env
+
 # Development documentation
 CLAUDE.md
 AGENTS.md
