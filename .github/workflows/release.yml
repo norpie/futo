@@ -14,6 +14,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: release
 
     steps:
     - name: Checkout code
@@ -67,39 +68,46 @@ jobs:
     - name: Build release APK
       run: |
         echo "=== Starting Release Build ==="
-        echo "Java version:"
-        java -version
-        echo ""
-        echo "Gradle version:"
-        ./gradlew --version
-        echo ""
-        echo "Environment variables:"
-        echo "KEYSTORE_PASSWORD: ${KEYSTORE_PASSWORD:+SET}"
-        echo "KEY_ALIAS: ${KEY_ALIAS:+SET}"
-        echo "KEY_PASSWORD: ${KEY_PASSWORD:+SET}"
-        echo ""
-        echo "=== Running Gradle Build ==="
-        ./gradlew assembleUnstableRelease --info --stacktrace
+        ./gradlew assembleUnstableRelease --info
         BUILD_EXIT_CODE=$?
         echo "Build exit code: $BUILD_EXIT_CODE"
+
         if [ $BUILD_EXIT_CODE -ne 0 ]; then
           echo "❌ Build failed with exit code $BUILD_EXIT_CODE"
           exit 1
         fi
+
         echo "✅ Build completed successfully"
       env:
         ORG_GRADLE_PROJECT_keystorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
         ORG_GRADLE_PROJECT_keyAlias: ${{ secrets.KEY_ALIAS }}
         ORG_GRADLE_PROJECT_keyPassword: ${{ secrets.KEY_PASSWORD }}
 
+    - name: Verify APK creation
+      run: |
+        echo "=== Checking APK Output ==="
+        APK_PATH="build/outputs/apk/unstable/release/latinime-unstable-release.apk"
+
+        if [ ! -f "$APK_PATH" ]; then
+          echo "❌ APK not found at: $APK_PATH"
+          echo "=== Build Directory Contents ==="
+          find build/outputs -name "*.apk" 2>/dev/null || echo "No APK files found"
+          exit 1
+        fi
+
+        APK_SIZE=$(stat -f%z "$APK_PATH" 2>/dev/null || stat -c%s "$APK_PATH" 2>/dev/null || echo "unknown")
+        echo "✅ APK found: $APK_PATH (size: $APK_SIZE bytes)"
+
     - name: Get version name
       id: version
       run: |
-        echo "=== Getting Version Information ==="
+        echo "=== Getting Version Info ==="
         VERSION_NAME=$(./gradlew -q printVersionName | tail -1)
         echo "Raw version output: '$VERSION_NAME'"
+        VERSION_NAME=$(echo "$VERSION_NAME" | tr -d '\n\r' | sed 's/^v//')
+        echo "Cleaned version: '$VERSION_NAME'"
         echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
-        echo "Version: $VERSION_NAME"
+        echo "✅ Version: $VERSION_NAME"
 
     - name: Verify build outputs
       run: |
@@ -162,40 +170,16 @@ jobs:
         echo "=== Creating Release Archives ==="
         mkdir -p release-artifacts
 
-        APK_SOURCE="build/outputs/apk/unstable/release/latinime-unstable-release.apk"
-        APK_DEST="release-artifacts/latinime-unstable-release.apk"
-
-        echo "Copying APK from: $APK_SOURCE"
-        echo "Copying APK to: $APK_DEST"
-
-        if [ -f "$APK_SOURCE" ]; then
-          cp "$APK_SOURCE" "$APK_DEST"
-          echo "✅ APK copied successfully"
-          ls -la "$APK_DEST"
-        else
-          echo "❌ Source APK not found: $APK_SOURCE"
-          echo "Available files in release directory:"
-          ls -la build/outputs/apk/unstable/release/ || echo "Directory not found"
+        if [ ! -f "build/outputs/apk/unstable/release/latinime-unstable-release.apk" ]; then
+          echo "❌ APK missing during archive creation"
           exit 1
         fi
 
-    - name: Verify release artifacts
-      run: |
-        echo "=== Verifying Release Artifacts ==="
-        echo "Contents of release-artifacts directory:"
-        ls -la release-artifacts/
-
-        APK_FILE="release-artifacts/latinime-unstable-release.apk"
-        if [ -f "$APK_FILE" ]; then
-          echo "✅ Release APK found: $APK_FILE"
-          echo "Size: $(stat -c%s "$APK_FILE") bytes"
-          echo "SHA256: $(sha256sum "$APK_FILE" | cut -d' ' -f1)"
-        else
-          echo "❌ Release APK not found: $APK_FILE"
-          exit 1
-        fi
+        cp build/outputs/apk/unstable/release/latinime-unstable-release.apk release-artifacts/
         cd release-artifacts
         sha256sum latinime-unstable-release.apk > latinime-unstable-release.apk.sha256
+        echo "✅ Release archives created"
+        ls -la
 
     - name: Create GitHub release
       id: create_release
